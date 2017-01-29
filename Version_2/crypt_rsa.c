@@ -4,14 +4,28 @@
 #include "genere_cle.h"
 
 
+int nb_bits(uint64_t a)
+{
+	int nb=0;
+	while(a){ nb++; a = a>>1; }
+	return nb;
+	
+}
+
+//calcul de c puissance e mod n
 uint64_t exp_rapide(uint64_t c, uint64_t e, uint64_t n)
 {
-	uint64_t x=1, i=e;
-	
-	while(i){
-		if ((i&1) == 1) x = (x*c)%n; //i%2 == 1
-		i = i>>1; //i = i/2
+	uint64_t x=1;
+		
+	while(e){
+		c=c%n;
+		//printf("\nle nb de bits de x mod nc est: %d\n",nb_bits((x%n)*c));
+		if ((e&1) == 1) x = ((x%n)*c)%n; //i%2 == 1
+		e = e>>1; //i = i/2
+		//printf("le nb de bits de c*c est: %d\n",nb_bits(c*c));
 		c = (c*c)%n;
+		//printf("le nb de bits de c est: %d\n",nb_bits(c));
+		//printf("le nb de bits de x est: %d\n",nb_bits(x));
 		}
 	return x;
 }
@@ -43,13 +57,17 @@ void decrypt(char* file_crypt, char* file_d, uint64_t d, uint64_t n)
 	FILE* fd = fopen(file_d,"w");
 	if(fd==NULL){ printf("FICHIER IMPOSSIBLE A CREER\n"); exit(1); }
 	
-	long long int c=0;
+	long long unsigned int c=0;
 	uint64_t x;
 	
 	do{
-		fscanf(fc,"%lld ",&c);
-		x = exp_rapide(c, d, n);
-		fputc(x,fd);
+		c = fgetc(fc);
+		if (c != EOF){
+			ungetc(c,fc);
+			fscanf(fc,"%llu ",&c);
+			x = exp_rapide(c, d, n);
+			fputc(x,fd);
+			}
 		}while(c != EOF);
 }
 

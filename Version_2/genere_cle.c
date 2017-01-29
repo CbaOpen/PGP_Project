@@ -13,7 +13,7 @@
 //cela donne un nombre en dessous de la valeur max pour les nombres de 64 bits
 int alea()
 {
-	uint64_t n=pow(2,32);  
+	uint64_t n=pow(2,16);  
 	uint64_t i=rand()%n;
 	return i;
 }
@@ -21,10 +21,10 @@ int alea()
 int teste_premier(uint64_t a)
 {
 	if(a==2) return 1;
-	else if(a%2==0) return 0;
+	else if((a&1) == 0) return 0;
 	uint64_t n;
 	uint64_t aa=sqrt(a);
-	int test=0;
+	uint64_t test=0;
 	for(n=1; n<=aa; n=n+2){
 		if(a%n==0){
 			test++;
@@ -57,26 +57,23 @@ uint64_t genere_e(uint64_t z){
 
 //basé sur l'algorithme d'Euclide étendu
 uint64_t genere_d(uint64_t e, uint64_t z){
-	uint64_t z_0,e_0,t,t_0,q,r,temp;
+	int64_t z0,t,q,r0,r1;
 	
-	z_0 = z;
-	e_0 = e;
-	t_0 = 0;
-	t = 1;
-	q = z_0/e_0;
-	r = z_0 - q*e_0;
+	z0 = z;
+	r0=0; 
+	r1=1;
 	
-	while(r>0){
-		temp = (t_0-q*t)%z;
-		t_0 = t;
-		t = temp;
-		z_0 = e_0;
-		e_0 = r;
-		q = z_0/e_0;
-		r = z_0 - q*e_0;
+	while(e>1){
+		q= e/z;
+		t=z;
+		z = e%z;
+		e=t;
+		t=r0;
+		r0=r1 - q*r0;
+		r1=t;
 		}
-	if (e_0 != 1) { printf("e n'a pas d'inverse mod n"); return 0; }
-	return t;
+	while(r1<0){ r1 += z0;}
+	return r1;
 	
 }
 
@@ -85,6 +82,7 @@ void genere_cle(uint64_t *p, uint64_t *q, uint64_t *n, uint64_t *e, uint64_t *d)
 	srand(time(NULL));
 	*p=alea_premier();
 	*q=alea_premier();
+	//*p=48571; *q=7001;
 	while(*p==*q){
 		*p=alea_premier();
 		*q=alea_premier();
