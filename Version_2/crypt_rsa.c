@@ -49,7 +49,6 @@ void encrypt(char* file_e, char* file_crypt, uint64_t e, uint64_t n)
 	fclose(fe);
 } 
 
-//probleme
 void decrypt(char* file_crypt, char* file_d, uint64_t d, uint64_t n)
 {
 	FILE* fc = fopen(file_crypt, "r");
@@ -71,6 +70,7 @@ void decrypt(char* file_crypt, char* file_d, uint64_t d, uint64_t n)
 		}while(c != EOF);
 }
 
+// ./rsa [-e|-d] [fichier à chiffrer/dechiffré] [fichier pour le résultat]
 int main (int argc, char** argv)
 {
 	uint64_t p,q,n,e,d;
@@ -79,7 +79,7 @@ int main (int argc, char** argv)
 	
 	if (argc == 4){
 		/*if (strcmp(argv[1],"-e") == 0)*/ encrypt(argv[2],argv[3],e,n);
-		 decrypt(argv[3],"decrypt.txt",d,n);
+		/*if (strcmp(argv[1],"-d") == 0)*/ decrypt(argv[3],"decrypt.txt",d,n);
 		}
 	
 	return 0;

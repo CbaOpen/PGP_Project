@@ -5,43 +5,56 @@
 #include <math.h>
 #include <time.h>
 #include "genere_cle.h"
+//#include "nb_premier.h"
 
 //........................GENERATION CLE RSA..........................//
 
-//2 puissance 32 : valeur max pour en entier non signé de 32 bits
-//j'ai pris 32 bits pour p et q car quand on multiplie q*p
-//cela donne un nombre en dessous de la valeur max pour les nombres de 64 bits
-int alea()
-{
-	uint64_t n=pow(2,16);  
-	uint64_t i=rand()%n;
-	return i;
-}
 
-int teste_premier(uint64_t a)
+//Crible d'Eratostène
+//fait la liste des nombres premier jusqu'à un nombre n et les met dans un fichier
+void liste_nb_premier(int n, FILE* file)
 {
-	if(a==2) return 1;
-	else if((a&1) == 0) return 0;
-	uint64_t n;
-	uint64_t aa=sqrt(a);
-	uint64_t test=0;
-	for(n=1; n<=aa; n=n+2){
-		if(a%n==0){
-			test++;
+	int nb=2, i, test=1, cmp=0;
+	
+	while(nb<n){
+		for(i=2; i<sqrt(n); i++)
+			{ if(nb%i == 0) test = 0; }
+		if(test) {fprintf(file,"%d ",nb); cmp++;}
+		nb++;
+		test = 1;
 		}
-	}
-	if(test==2) return 1;
-	return 0;
+	printf("%d\n",cmp);
+	
 }
 
-int alea_premier()
-{
-	uint64_t i=alea();
-	if(teste_premier(i)) return i;
-	else {
-		return alea_premier();
+//n = 2^16 est un nombre suffisant pour que la multiplication p*q soir inférieur à 32 bits
+//si p*q supérieur à 32 bits, overflow lors du calcul de l'inverse
+void crée_liste_nb_premier(){
+	
+	FILE * file = fopen("Liste_nb_premier","w");
+	if (file == NULL) printf("impossible d'ouvrir le fichier");
+	
+	liste_nb_premier(pow(2,16), file);
+	
+	fclose(file);
 	}
+
+
+//choisi un nombre aléatoire parmi les nombres premiers du fichier entre le 5000ème et le dernier
+//6488 est le nombre total de nombres premiers dans le fichier
+//ce chiffre change si la valeur max n de la fonction qui calcul les nombres premiers change
+int alea()
+{ 
+	int i=rand()%(6488-5000) + 5000; printf("%d\n",i);
+	int cmp=1, n;
+	FILE* file = fopen("Liste_nb_premier","r");
+	if(file == NULL) { printf("le fichier liste_nb_premier n'existe pas"); exit(EXIT_FAILURE); }
+	
+	while(cmp<i) { fscanf(file,"%d ",&n); cmp++; }
+	fscanf(file,"%d ",&n);
+	return n; 
 }
+
 
 uint64_t pgcd(uint64_t a,uint64_t b)
 {
@@ -80,13 +93,9 @@ uint64_t genere_d(uint64_t e, uint64_t z){
 void genere_cle(uint64_t *p, uint64_t *q, uint64_t *n, uint64_t *e, uint64_t *d)
 {
 	srand(time(NULL));
-	*p=alea_premier();
-	*q=alea_premier();
-	//*p=48571; *q=7001;
-	while(*p==*q){
-		*p=alea_premier();
-		*q=alea_premier();
-	}
+	*p=alea();
+	*q=alea();
+	
 	printf("\np=%llu\n",(long long)*p);
 	printf("q=%llu\n",(long long)*q);
 	
