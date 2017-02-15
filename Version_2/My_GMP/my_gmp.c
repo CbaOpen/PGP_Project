@@ -6,7 +6,7 @@
 #include "bits.h"
 
 #define NB_CAR_UINT64 20
-#define MAX_UINT64 0xFFFFFFFFFFFFFFFF
+#define MAX_UINT64 9999999999999999999
 
 
 
@@ -28,6 +28,12 @@ UINT_X init_uint_x(int taille){
 
 void free_uint_x(UINT_X n){
 	free(n.tab);
+}
+
+UINT_X affect_var(UINT_X n)
+{
+	
+	return n;
 }
 
 void printf_uint_x (UINT_X n){
@@ -129,11 +135,15 @@ UINT_X somme(UINT_X c, UINT_X a, UINT_X b)
 		if (i < autre)
 		{
 			result = somme_uint64(grand[i], petit[i]);
+			printf("resultat: %"PRIu64, result.resultat);
+			printf("\nretenue: %d\n", result.finalRetenue);
 			c.tab[i] = result.resultat;
+			printf("nb_bits: %d\n", nb_bits(c.tab[i])); 
+			if((i+1) < taille) grand[i+1] += result.finalRetenue;
+			else c.tab[i+1] += result.finalRetenue;
 		}
 		else c.tab[i] = grand[i];
-	if((i+1) < taille) grand[i+1] += result.finalRetenue;
-	else c.tab[i+1] += result.finalRetenue;
+	
 	}
 	return c;
 }
@@ -143,7 +153,7 @@ int main(){
 	UINT_X a=init_uint_x(512-64), b=init_uint_x(512);
 	
 	a.tab[0]=1;
-	for(i=0;i<b.taille;i++){ b.tab[i]=999;	}
+	for(i=0;i<4;i++){ b.tab[i]=MAX_UINT64; }
 	printf("a>%d\n",a.taille);
 	printf_uint_x(a);
 	printf("b>%d\n",b.taille);
