@@ -1,9 +1,12 @@
+//quelques fonctions sur d'informations sur les bits d'un nombre
+
 #include <stdio.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include "my_gmp.h" 
 #include "bits.h"
 
+//renvoie le nombre de bits d'un nombre de type uint64
 int nb_bits(uint64_t a)
 {
 	int nb=0;
@@ -12,6 +15,7 @@ int nb_bits(uint64_t a)
 	
 }
 
+//renvoie le bit à un certain rang
 int access_bit_n(uint64_t in,int n)
 {
 	if(n<=0) return -1;
@@ -22,6 +26,7 @@ int access_bit_n(uint64_t in,int n)
 	return in;
 }
 
+//affiche un nombre de type uint_x en binaire
 void printf_binaire_uint_x(UINT_X n)
 {
 	int i,j; uint64_t temp;

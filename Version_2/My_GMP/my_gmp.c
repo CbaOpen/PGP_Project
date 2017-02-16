@@ -1,3 +1,5 @@
+//Fonctions de calculs sur des nombres à taille variable
+//somme............ lignes 54 à 148
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -5,11 +7,8 @@
 #include "my_gmp.h" 
 #include "bits.h"
 
-#define NB_CAR_UINT64 20
-#define MAX_UINT64 9999999999999999999
 
-
-
+//initialise une variable dont la taille est donnée en argument
 UINT_X init_uint_x(int taille){
 	int i;
 	UINT_X new;
@@ -19,6 +18,7 @@ UINT_X init_uint_x(int taille){
 		printf("IMPOSSIBLE DE RESERVER DE LA MEMOIRE POUR UINT_X\n");
 		exit(1);
 	}
+	//initialise la variable à zéro
 	for(i=0;i<new.taille;i++)
 	{
 		new.tab[i]=0;
@@ -26,16 +26,19 @@ UINT_X init_uint_x(int taille){
 	return new;
 }
 
+//libère la variable de type uint_x
 void free_uint_x(UINT_X n){
 	free(n.tab);
 }
 
+//à voir comment on va affecter une valeure à uint_x
 UINT_X affect_var(UINT_X n)
 {
 	
 	return n;
 }
 
+//écrit la variable de type uint_x en base 10
 void printf_uint_x (UINT_X n){
 	int j;
 	for(j=n.taille-1;j>=0;j--){
@@ -45,13 +48,8 @@ void printf_uint_x (UINT_X n){
 	printf("\n");
 }
 
-int calcul_retenue(uint64_t mask, uint64_t grand)
-{
-	
-	
-	
-}
-
+//fait la somme en base 2 de deux variables de type uint64
+//renvoit un structure comprenant le résultat de la somme et l'éventuelle retenue
 RESULTSOMME64 somme_uint64(uint64_t a,uint64_t b){
 	int i, temp;
 	int retenue=0;
@@ -63,7 +61,6 @@ RESULTSOMME64 somme_uint64(uint64_t a,uint64_t b){
 	
 	temp=access_bit_n(a,1)+access_bit_n(b,1);
 	for(i=1;i<=64;i++){
-		//if(i==1) temp=access_bit_n(a,i)+access_bit_n(b,i)+ result.finalRetenue;
 		temp=access_bit_n(a,i)+access_bit_n(b,i)+retenue;
 		
 		switch(temp){
@@ -86,61 +83,60 @@ RESULTSOMME64 somme_uint64(uint64_t a,uint64_t b){
 			break;
 		}
 		mask<<=1;
-		
-	}/*
-	//printf("RETENUE FINALE: %d\n",finalRetenue);
-	printf("\n");
-	printf("A: ");
-	for(i=64;i>0;i--){
-		printf("%d",access_bit_n(a,i));
-		}
-	printf("\n");
-	printf("B: ");
-	for(i=64;i>0;i--){
-		printf("%d",access_bit_n(b,i));
-		}
-	printf("\n");
-	printf("C: ");
-	for(i=64;i>0;i--){
-		printf("%d",access_bit_n(resultat,i));
-		}
-	printf("\n");
-	printf("RETENUE FINALE: %d\n",finalRetenue);*/
+	}
 	return result;
 }
 
-
+//attention, les calculs se font en base 2 donc la représentation en base 10 du nombre de type uint64 n'est pas correcte
+//à voir pour créer une fonction permettant d'afficher ce nombre en base 10
+//Fait la somme de deux nombres de type uint_x
+//les pointeurs sur uint64 évitent de faire trop de tests
 UINT_X somme(UINT_X c, UINT_X a, UINT_X b)
 {
-	int taille, autre;
-	int i;
+	int taille_grd, taille_pt;
+	int i,j;
 	RESULTSOMME64 result;
 	uint64_t *grand, *petit;
 	
-	if (a.taille >= b.taille) {
-		taille = a.taille;
-		autre = b.taille;
+	if (a.taille >= b.taille) 
+	{
+		taille_grd = a.taille;
+		taille_pt = b.taille;
 		grand = a.tab;
 		petit = b.tab;
-		}
-	else {
-		taille = b.taille;
-		autre = a.taille;
+	}
+	else 
+	{
+		taille_grd = b.taille;
+		taille_pt = a.taille;
 		grand = b.tab;
 		petit = a.tab;
-		}
+	}
 	
-	for (i=0; i<taille; i++)
+	for (i=0; i<taille_grd; i++)
 	{
-		if (i < autre)
+		if (i < taille_pt)
 		{
 			result = somme_uint64(grand[i], petit[i]);
-			printf("resultat: %"PRIu64, result.resultat);
-			printf("\nretenue: %d\n", result.finalRetenue);
+			//printf("resultat: %"PRIu64, result.resultat);
+			//printf("\nretenue: %d\n", result.finalRetenue);
 			c.tab[i] = result.resultat;
-			printf("nb_bits: %d\n", nb_bits(c.tab[i])); 
-			if((i+1) < taille) grand[i+1] += result.finalRetenue;
-			else c.tab[i+1] += result.finalRetenue;
+			j = i+1;
+			while(result.finalRetenue)
+			{
+				if((j) < taille_grd)
+				{
+					result = somme_uint64(grand[j], result.finalRetenue);
+					grand[j] = result.resultat;
+					j++;
+				}
+				else 
+				{
+					result = somme_uint64(c.tab[j], result.finalRetenue);
+					c.tab[j] = result.resultat;
+					j++;
+				}
+			}
 		}
 		else c.tab[i] = grand[i];
 	
@@ -152,42 +148,26 @@ int main(){
 	int i;
 	UINT_X a=init_uint_x(512-64), b=init_uint_x(512);
 	
-	a.tab[0]=1;
+	a.tab[0]=10; 
 	for(i=0;i<4;i++){ b.tab[i]=MAX_UINT64; }
-	printf("a>%d\n",a.taille);
-	printf_uint_x(a);
-	printf("b>%d\n",b.taille);
-	printf_uint_x(b);
 	
+	//affiche le nombre de cases de 64 bits de la variable et sa valeur en binaire
+	printf("a>%d\n",a.taille);
+	printf_binaire_uint_x(a);
+	printf("b>%d\n",b.taille);
+	printf_binaire_uint_x(b);
+	
+	//calcule la somme et affiche la valeur
 	UINT_X c = init_uint_x(512+64);
 	printf("c>%d\n",c.taille); 
 	c = somme(c,a,b);
-	printf_uint_x(c);
+	printf_binaire_uint_x(c);
 	printf("\n");
 	
 	
 	free_uint_x(a);
 	free_uint_x(b);
 	free_uint_x(c);
-
-	/*uint64_t a,b,c;
-	a=MAX_UINT64;
-	b=69;
-	int i;
-	//printf("\n");
-	for(i=64;i>0;i--){
-		printf("%d",access_bit_n(a,i));
-	}
-	a+=4;
-	printf("\n");
-	for(i=64;i>0;i--){
-		printf("%d",access_bit_n(a,i));
-	}
-	printf("\n");
-	c=somme_uint64(a,b);
-	printf("%"PRIu64,c);
-	printf("\n");*/
-	
 	
 	return 0;
 }
