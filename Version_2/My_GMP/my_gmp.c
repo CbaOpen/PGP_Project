@@ -34,6 +34,18 @@ void free_uint_x(UINT_X n){
 	free(n.tab);
 }
 
+//fait la copie d'un UINT_X
+//alloque la mémoire qu'il faut donc pas besoin de le faire avant
+void copier(UINT_X *copie, UINT_X original)
+{
+	int i;
+	if((*copie).taille<original.taille){
+		free_uint_x(*copie);
+		*copie = init_uint_x(original.taille*64);
+		}
+	for (i=0; i<original.taille; i++) (*copie).tab[i] = original.tab[i];
+}
+
 //si la taille d'un nombre est plus grande que necessaire, 
 //réalloue de la mémoire pour juste le nombre de bits qu'il faut
 void ajuste_taille(UINT_X *n)
@@ -137,23 +149,33 @@ UINT_X somme(UINT_X resultat, UINT_X a, UINT_X b)
 }
 
 //Renvoie original shifté de bit+case_tab*64 dans la variable copie
+//case_tab: le nombre de case à shifter
+//bit: le nombre de bit à shifter dans la case après case_tab
+//1er if: si le nombre de bit à shifter après case_tab = 0 ou que le shifte de bit a déjà été fait et qu'il n'y a plus de chiffre à décaler (temp.tab[i-1-case_tab]) alors le nombre est directement recpier dans copie
+//sinon, on copie bit après bit le nombre de temp.tab[i] à partir du rang 64-bit
+//temp.tab[i] est ensuite shifté de 64-bit et s'il est encore > 0,
+//alors le reste est recopié lors de la boucle suivante dans la case de copie
+//le dernier if sert à recopier les derniers bits dans la dernière case de copie
 void egale_shift(UINT_X *copie, UINT_X original, int case_tab, int bit)
 {
-	if((*copie).tab != NULL) free((*copie).tab);
+	if((*copie).tab != NULL) free_uint_x(*copie);
 	*copie = init_uint_x((original.taille+case_tab+1)*64);
+	UINT_X temp = init_uint_x(original.taille*64);
 	int i,j;
+	copier(&temp, original);
 	
-	for(i=case_tab;i<(original.taille+case_tab);i++)
+	for(i=case_tab;i<(temp.taille+case_tab);i++)
 	{
-		if(bit == 0 || (i>case_tab && original.tab[i-1-case_tab]>0)) (*copie).tab[i]=original.tab[i-case_tab];
+		if(bit == 0 || (i>case_tab && temp.tab[i-1-case_tab]==0)) (*copie).tab[i]=temp.tab[i-case_tab];
 		else
 		{
 			for(j=64-bit; j>0; j--)
 			{
 				(*copie).tab[i] <<=1;
-				(*copie).tab[i] += access_bit_n(original.tab[i-case_tab], j);
+				(*copie).tab[i] += access_bit_n(temp.tab[i-case_tab], j);
+				
 			}
-			original.tab[i-case_tab] >>= 64-bit;
+			temp.tab[i-case_tab] >>= 64-bit;
 			if(i==case_tab)	(*copie).tab[i] <<= bit;
 			else
 			{
@@ -161,29 +183,32 @@ void egale_shift(UINT_X *copie, UINT_X original, int case_tab, int bit)
 				while (j > 0)
 				{				
 					(*copie).tab[i] <<=1;
-					(*copie).tab[i] += access_bit_n(original.tab[i-1-case_tab], j);
+					(*copie).tab[i] += access_bit_n(temp.tab[i-1-case_tab], j);
 					j--;
 				}
 			}
 		}
 	}
-	if(original.tab[i-1-case_tab] > 0)
+	if(temp.tab[i-1-case_tab] > 0)
 	{
 		j=bit;
 		while (j > 0)
 		{				
 			(*copie).tab[i] <<=1;
-			(*copie).tab[i] += access_bit_n(original.tab[i-1-case_tab], j);
+			(*copie).tab[i] += access_bit_n(temp.tab[i-1-case_tab], j);
 			j--;
 		}
 	}
+	free_uint_x(temp);
 }
 
-//multiplication
+//multiplication de a par b
+//à chaque fois que le bit lu de b vaut 1, on décale a du nombre de bits égale au rang du bit lu de b
+//puis on fait la somme avec le résultat précédent
 UINT_X multiplication(UINT_X resultat, UINT_X a, UINT_X b)
 {
 	UINT_X temp; temp.tab = NULL;
-	UINT_X copie;
+	UINT_X copie = init_uint_x(resultat.taille*64);
 	int i,j;
 	
 	for(i=0; i<b.taille; i++)
@@ -192,13 +217,14 @@ UINT_X multiplication(UINT_X resultat, UINT_X a, UINT_X b)
 		{
 			if (access_bit_n(b.tab[i], j))
 			{
-				copie = resultat;
-				egale_shift(&temp,a,i,j);
+				copier(&copie, resultat);
+				egale_shift(&temp,a,i,j-1);
 				resultat = somme(resultat, copie, temp);
 			}
 		}
 	}
 	free_uint_x(temp);
+	free_uint_x(copie);
 	ajuste_taille(&resultat);
 	return resultat;
 }
@@ -207,7 +233,7 @@ int main(){
 	int i;
 	UINT_X a=init_uint_x(512-64), b=init_uint_x(512);
 	
-	a.tab[0]=7; b.tab[0]=111;
+	a.tab[0]=2; b.tab[0]=70;
 	//for(i=0;i<4;i++){ b.tab[i] = MAX_UINT64; }
 	
 	ajuste_taille(&a);
