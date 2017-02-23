@@ -6,6 +6,7 @@
 #include <inttypes.h>
 #include "my_gmp.h" 
 #include "bits.h"
+#include "printf.h"
 
 #define max(a,b) ((a<b)?(b):(a))
 #define min(a,b) ((a<b)?(a):(b))
@@ -15,6 +16,7 @@
 UINT_X init_uint_x(int taille){
 	int i;
 	UINT_X new;
+	new.init = 1;
 	new.taille=taille/(8*sizeof(uint64_t));
 	new.tab=malloc(new.taille*sizeof(uint64_t));
 	if(new.tab==NULL){
@@ -32,6 +34,7 @@ UINT_X init_uint_x(int taille){
 //libère la variable de type uint_x
 void free_uint_x(UINT_X n){
 	free(n.tab);
+	n.init = 0;
 }
 
 //fait la copie d'un UINT_X
@@ -39,27 +42,27 @@ void free_uint_x(UINT_X n){
 void copier(UINT_X *copie, UINT_X original)
 {
 	int i;
-	if((*copie).taille<original.taille){
+	if(copie->taille<original.taille){
 		free_uint_x(*copie);
 		*copie = init_uint_x(original.taille*64);
 		}
-	for (i=0; i<original.taille; i++) (*copie).tab[i] = original.tab[i];
+	for (i=0; i<original.taille; i++) copie->tab[i] = original.tab[i];
 }
 
 //si la taille d'un nombre est plus grande que necessaire, 
 //réalloue de la mémoire pour juste le nombre de bits qu'il faut
 void ajuste_taille(UINT_X *n)
 {
-	int i=(*n).taille-1, cmp=0;
-	while((*n).tab[i] == 0) { cmp++; i--; }
+	int i=n->taille-1, cmp=0;
+	while(n->tab[i] == 0) { cmp++; i--; }
 	//printf("cmp : %d\n", cmp);
 	if (cmp > 0)
 	{
-		(*n).taille -= cmp;
-		uint64_t *temp = malloc((*n).taille*sizeof(uint64_t));
-		for(i=0; i<(*n).taille; i++) temp[i] = (*n).tab[i];
+		n->taille -= cmp;
+		uint64_t *temp = malloc(n->taille*sizeof(uint64_t));
+		for(i=0; i<n->taille; i++) temp[i] = n->tab[i];
 		free_uint_x(*n);
-		(*n).tab=temp;
+		n->tab=temp;
 	}
 }
 
@@ -68,17 +71,6 @@ UINT_X affect_var(UINT_X n)
 {
 	
 	return n;
-}
-
-//écrit la variable de type uint_x en base 10
-//attention, cette fonction n'est pas correcte
-void printf_uint_x (UINT_X n){
-	int j;
-	for(j=n.taille-1;j>=0;j--){
-		printf(" %"PRIu64,n.tab[j]);
-		
-	}
-	printf("\n");
 }
 
 //fait la somme en base 2 de deux variables de type uint64
@@ -121,31 +113,30 @@ uint64_t somme_uint64(uint64_t a,uint64_t b, char *finalRetenue){
 //attention, les calculs se font en base 2 donc la représentation en base 10 du nombre de type uint64 n'est pas correcte
 //à voir pour créer une fonction permettant d'afficher ce nombre en base 10
 //Fait la somme de deux nombres de type uint_x
-UINT_X somme(UINT_X resultat, UINT_X a, UINT_X b)
+void somme(UINT_X *resultat, UINT_X a, UINT_X b)
 {
 	int i;
 	char retenue=0;
 	
-	if(resultat.taille <= max(a.taille,b.taille)) {
-		free_uint_x(resultat);
-		resultat = init_uint_x((1+max(a.taille,b.taille))*64);
+	if(resultat->taille <= max(a.taille,b.taille)) {
+		free_uint_x(*resultat);
+		*resultat = init_uint_x((1+max(a.taille,b.taille))*64);
 		}
 	
 	for (i=0; i<max(a.taille, b.taille); i++)
 	{
 		if (i < min(a.taille, b.taille))
 		{
-			resultat.tab[i] = somme_uint64(a.tab[i], b.tab[i], &retenue);
+			resultat->tab[i] = somme_uint64(a.tab[i], b.tab[i], &retenue);
 		}
 		else 
 		{
 			if(max(a.taille, b.taille) == a.taille)
-				resultat.tab[i] = somme_uint64(a.tab[i], 0, &retenue);
-			else resultat.tab[i] = somme_uint64(b.tab[i], 0, &retenue);
+				resultat->tab[i] = somme_uint64(a.tab[i], 0, &retenue);
+			else resultat->tab[i] = somme_uint64(b.tab[i], 0, &retenue);
 		}
 	}
-	if(retenue==1) resultat.tab[max(a.taille,b.taille)]=1;
-	return resultat;
+	if(retenue==1) resultat->tab[max(a.taille,b.taille)]=1;
 }
 
 //Renvoie original shifté de bit+case_tab*64 dans la variable copie
@@ -158,7 +149,7 @@ UINT_X somme(UINT_X resultat, UINT_X a, UINT_X b)
 //le dernier if sert à recopier les derniers bits dans la dernière case de copie
 void egale_shift(UINT_X *copie, UINT_X original, int case_tab, int bit)
 {
-	if((*copie).tab != NULL) free_uint_x(*copie);
+	if(copie->tab != NULL) free_uint_x(*copie);
 	*copie = init_uint_x((original.taille+case_tab+1)*64);
 	UINT_X temp = init_uint_x(original.taille*64);
 	int i,j;
@@ -166,24 +157,24 @@ void egale_shift(UINT_X *copie, UINT_X original, int case_tab, int bit)
 	
 	for(i=case_tab;i<(temp.taille+case_tab);i++)
 	{
-		if(bit == 0 || (i>case_tab && temp.tab[i-1-case_tab]==0)) (*copie).tab[i]=temp.tab[i-case_tab];
+		if(bit == 0 || (i>case_tab && temp.tab[i-1-case_tab]==0)) copie->tab[i]=temp.tab[i-case_tab];
 		else
 		{
 			for(j=64-bit; j>0; j--)
 			{
-				(*copie).tab[i] <<=1;
-				(*copie).tab[i] += access_bit_n(temp.tab[i-case_tab], j);
+				copie->tab[i] <<=1;
+				copie->tab[i] += access_bit_n(temp.tab[i-case_tab], j);
 				
 			}
 			temp.tab[i-case_tab] >>= 64-bit;
-			if(i==case_tab)	(*copie).tab[i] <<= bit;
+			if(i==case_tab)	copie->tab[i] <<= bit;
 			else
 			{
 				j=bit;
 				while (j > 0)
 				{				
-					(*copie).tab[i] <<=1;
-					(*copie).tab[i] += access_bit_n(temp.tab[i-1-case_tab], j);
+					copie->tab[i] <<=1;
+					copie->tab[i] += access_bit_n(temp.tab[i-1-case_tab], j);
 					j--;
 				}
 			}
@@ -194,8 +185,8 @@ void egale_shift(UINT_X *copie, UINT_X original, int case_tab, int bit)
 		j=bit;
 		while (j > 0)
 		{				
-			(*copie).tab[i] <<=1;
-			(*copie).tab[i] += access_bit_n(temp.tab[i-1-case_tab], j);
+			copie->tab[i] <<=1;
+			copie->tab[i] += access_bit_n(temp.tab[i-1-case_tab], j);
 			j--;
 		}
 	}
@@ -205,11 +196,17 @@ void egale_shift(UINT_X *copie, UINT_X original, int case_tab, int bit)
 //multiplication de a par b
 //à chaque fois que le bit lu de b vaut 1, on décale a du nombre de bits égale au rang du bit lu de b
 //puis on fait la somme avec le résultat précédent
-UINT_X multiplication(UINT_X resultat, UINT_X a, UINT_X b)
+void produit(UINT_X *resultat, UINT_X a, UINT_X b)
 {
 	UINT_X temp; temp.tab = NULL;
-	UINT_X copie = init_uint_x(resultat.taille*64);
+	UINT_X copie = init_uint_x(resultat->taille*64);
 	int i,j;
+	
+	if (resultat->init == 0) *resultat = init_uint_x((a.taille + b.taille)*64);
+	else if (resultat->taille < (a.taille + b.taille)){
+		free_uint_x(*resultat);
+		*resultat = init_uint_x((a.taille + b.taille)*64);
+		}
 	
 	for(i=0; i<b.taille; i++)
 	{
@@ -217,24 +214,26 @@ UINT_X multiplication(UINT_X resultat, UINT_X a, UINT_X b)
 		{
 			if (access_bit_n(b.tab[i], j))
 			{
-				copier(&copie, resultat);
+				copier(&copie, *resultat);
 				egale_shift(&temp,a,i,j-1);
-				resultat = somme(resultat, copie, temp);
+				somme(resultat, copie, temp);
 			}
 		}
 	}
 	free_uint_x(temp);
 	free_uint_x(copie);
-	ajuste_taille(&resultat);
-	return resultat;
+	ajuste_taille(resultat);
 }
 
 int main(){
-	int i;
-	UINT_X a=init_uint_x(512-64), b=init_uint_x(512);
+	UINT_X a=init_uint_x(512-64), b;
+	printf("b.init = %d\n",b.init);
+	b=init_uint_x(512);
 	
-	a.tab[0]=2; b.tab[0]=70;
-	//for(i=0;i<4;i++){ b.tab[i] = MAX_UINT64; }
+	a.tab[0]=84616588;  
+	b.tab[0]=70;
+	
+	//int i; for(i=0;i<8;i++){ b.tab[i] = MAX_UINT64; }
 	
 	ajuste_taille(&a);
 	ajuste_taille(&b);
@@ -248,12 +247,12 @@ int main(){
 	//calcule la somme et affiche la valeur
 	UINT_X c = init_uint_x((1+max(a.taille,b.taille))*64);
 	printf("c>%d\n",c.taille); 
-	c = somme(c,a,b);
+	somme(&c,a,b);
 	printf_binaire_uint_x(c);
 	printf("\n");
 	*/
 	UINT_X d = init_uint_x((a.taille+b.taille)*64);
-	d = multiplication(d,b,a);
+	produit(&d,b,a);
 	printf("d>%d\n",d.taille);
 	printf_binaire_uint_x(d);
 	

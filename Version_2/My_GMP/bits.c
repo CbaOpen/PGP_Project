@@ -32,20 +32,3 @@ int access_bit_n(uint64_t in,int n)
 	in>>=(64-1);
 	return in;
 }
-
-//affiche un nombre de type uint_x en binaire
-void printf_binaire_uint_x(UINT_X n)
-{
-	int i,j; uint64_t temp;
-	
-	for(j=n.taille-1;j>=0;j--){
-		for(i=64;i>0;i--){
-			temp=n.tab[j];
-			temp>>=(i-1);
-			temp<<=(64-1);
-			temp>>=(64-1);
-			printf("%"PRIu64,temp);
-		}
-		printf("\n");
-	}
-}

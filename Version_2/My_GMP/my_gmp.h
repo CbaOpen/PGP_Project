@@ -10,6 +10,7 @@
 //taille est le nombre de cases de type uint64
 //tab est un tableau
 struct uint_x{
+	char init;
 	int taille;
 	uint64_t* tab;
 }; typedef struct uint_x UINT_X;
