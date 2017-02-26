@@ -55,7 +55,6 @@ void ajuste_taille(UINT_X *n)
 {
 	int i=n->taille-1, cmp=0;
 	while(n->tab[i] == 0) { cmp++; i--; }
-	//printf("cmp : %d\n", cmp);
 	if (cmp > 0)
 	{
 		n->taille -= cmp;
@@ -226,7 +225,7 @@ void produit(UINT_X *resultat, UINT_X a, UINT_X b)
 }
 
 int main(){
-	UINT_X a=init_uint_x(512-64), b;
+	/*UINT_X a=init_uint_x(512-64), b;
 	printf("b.init = %d\n",b.init);
 	b=init_uint_x(512);
 	
@@ -250,7 +249,7 @@ int main(){
 	somme(&c,a,b);
 	printf_binaire_uint_x(c);
 	printf("\n");
-	*/
+	
 	UINT_X d = init_uint_x((a.taille+b.taille)*64);
 	produit(&d,b,a);
 	printf("d>%d\n",d.taille);
@@ -261,6 +260,10 @@ int main(){
 	free_uint_x(b);
 	//free_uint_x(c);
 	free_uint_x(d);
+	*/
 	
+	UINT_X n = init_uint_x(64);
+	printf_b10_uint_x(n);
+	free_uint_x(n);
 	return 0;
 }
