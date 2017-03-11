@@ -14,19 +14,13 @@
 
 //initialise une variable dont la taille est donnée en argument
 UINT_X init_uint_x(int taille){
-	int i;
 	UINT_X new;
 	new.init = 1;
 	new.taille=taille/(8*sizeof(uint64_t));
-	new.tab=malloc(new.taille*sizeof(uint64_t));
+	new.tab=calloc(new.taille, sizeof(uint64_t));
 	if(new.tab==NULL){
 		printf("IMPOSSIBLE DE RESERVER DE LA MEMOIRE POUR UINT_X\n");
 		exit(1);
-	}
-	//initialise la variable à zéro
-	for(i=0;i<new.taille;i++)
-	{
-		new.tab[i]=0;
 	}
 	return new;
 }
@@ -146,7 +140,7 @@ void somme(UINT_X *resultat, UINT_X a, UINT_X b)
 //temp.tab[i] est ensuite shifté de 64-bit et s'il est encore > 0,
 //alors le reste est recopié lors de la boucle suivante dans la case de copie
 //le dernier if sert à recopier les derniers bits dans la dernière case de copie
-void egale_shift(UINT_X *copie, UINT_X original, int case_tab, int bit)
+void shift(UINT_X *copie, UINT_X original, int case_tab, int bit)
 {
 	if(copie->tab != NULL) free_uint_x(*copie);
 	*copie = init_uint_x((original.taille+case_tab+1)*64);
@@ -214,7 +208,7 @@ void produit(UINT_X *resultat, UINT_X a, UINT_X b)
 			if (access_bit_n(b.tab[i], j))
 			{
 				copier(&copie, *resultat);
-				egale_shift(&temp,a,i,j-1);
+				shift(&temp,a,i,j-1);
 				somme(resultat, copie, temp);
 			}
 		}
@@ -222,6 +216,90 @@ void produit(UINT_X *resultat, UINT_X a, UINT_X b)
 	free_uint_x(temp);
 	free_uint_x(copie);
 	ajuste_taille(resultat);
+}
+
+int gestion_retenue(uint64_t a,uint64_t b,int i,int* retenueInf){
+	int temp;
+	if(*retenueInf==0){ //si il n'y a pas de retenue
+		if((access_bit_n(a,i)==0)&&(access_bit_n(b,i)==0)){ // si la premiere colonne vaut 0 et 0
+			temp=0; //PAS DE RETENUE DANS CE CAS
+		}
+		else if((access_bit_n(a,i)==0)&&(access_bit_n(b,i)==1)){ //si ca vaut 0 et 1
+			temp=1;
+			*retenueInf=1;
+		}
+		else if((access_bit_n(a,i)==1)&&(access_bit_n(b,i)==0)){ //si ca vaut 1 et 0
+			temp=1;
+			*retenueInf=0;
+		}
+		else if((access_bit_n(a,i)==1)&&(access_bit_n(b,i)==1)){ //si ca vaut 1 et 1
+			temp=0;
+			*retenueInf=0;
+		}
+	}
+	else{ //si il y a une retenue finale
+		if((access_bit_n(a,i)==0)&&(access_bit_n(b,i)==0)){ // si ca vaut 0 et 0 avec retenue inferieure
+			temp=1;
+			*retenueInf=1;
+		}
+		else if((access_bit_n(a,i)==0)&&(access_bit_n(b,i)==1)){ //si ca vaut 0 et 1 avec retenue inferieure
+			temp=0;
+			*retenueInf=1;
+		}
+		else if((access_bit_n(a,i)==1)&&(access_bit_n(b,i)==0)){ //si ca vaut 1 et 0 avec retenue inferieure
+			temp=0;
+			*retenueInf=0;
+		}
+		else if((access_bit_n(a,i)==1)&&(access_bit_n(b,i)==1)){ //si ca vaut 1 et 1 avec retenue inferieure
+			temp=1;
+			*retenueInf=1;
+		}
+	}
+	return temp;
+}
+
+uint64_t difference_uint64(uint64_t a,uint64_t b,int* finalRetenueInf){
+	int i,temp;
+	uint64_t mask,resultat;
+	int retenueInf=0;
+	mask=1;resultat=0;
+	for(i=1;i<=64;i++){
+		if(i==1){
+			temp=gestion_retenue(a,b,i,&(*finalRetenueInf));
+			
+		}
+		else {
+			temp=gestion_retenue(a,b,i,&retenueInf);
+		}
+		if(temp==1) {
+			resultat|=mask;
+		}
+		mask<<=1;
+	}
+	*finalRetenueInf=retenueInf;
+	//printf("\n");
+	return resultat;
+}
+
+UINT_X difference(UINT_X a,UINT_X b){
+	UINT_X resultat;
+	int i,retenue;
+	retenue=0;
+	
+	resultat=init_uint_x((max(a.taille,b.taille)+1)*64);
+	for(i=0;i<(min(a.taille,b.taille));i++){
+		resultat.tab[i]=difference_uint64(a.tab[i],b.tab[i],&retenue);
+	}
+	for(i=(min(a.taille,b.taille));i<max(a.taille,b.taille);i++){
+		if(min(a.taille,b.taille)==(a.taille)){
+			resultat.tab[i]=difference_uint64(b.tab[i],0,&retenue);
+		}
+		else resultat.tab[i]=difference_uint64(a.tab[i],0,&retenue);
+	}
+	if(retenue==1) resultat.tab[max(a.taille,b.taille)]=1;
+	else resultat.tab[max(a.taille,b.taille)]=0;
+	ajuste_taille(&resultat);
+	return resultat;
 }
 
 int main(){
@@ -242,7 +320,7 @@ int main(){
 	printf_binaire_uint_x(a);
 	printf("b>%d\n",b.taille);
 	printf_binaire_uint_x(b);
-/*
+
 	//calcule la somme et affiche la valeur
 	UINT_X c = init_uint_x((1+max(a.taille,b.taille))*64);
 	printf("c>%d\n",c.taille); 
@@ -258,7 +336,7 @@ int main(){
 	
 	free_uint_x(a);
 	free_uint_x(b);
-	//free_uint_x(c);
+	free_uint_x(c);
 	free_uint_x(d);
 	*/
 	
