@@ -23,12 +23,10 @@ int nb_bits_uint_x(UINT_X a)
 }
 
 //renvoie le bit à un certain rang
-int access_bit_n(uint64_t in,int n)
+//le premier bit est au rang 1
+char access_bit_n(uint64_t a,int n)
 {
-	if(n<=0) return -1;
-	else if(n>64) return -1;
-	in>>=(n-1);
-	in<<=(64-1);
-	in>>=(64-1);
-	return in;
+	if(n<=0 || n>64) return -1;
+	a>>=(n-1);
+	return a&1;
 }
