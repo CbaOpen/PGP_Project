@@ -307,17 +307,17 @@ UINT_X difference(UINT_X a,UINT_X b){
 
 
 void somme2 (UINT_X *resultat, UINT_X a, UINT_X b){
-	char retenue = 0 /*,retenue2 = 0*/;
+	char retenue = 0; int i;
 	
-	/*if(resultat->taille <= max(a.taille,b.taille)) {
+	if(resultat->taille <= max(a.taille,b.taille)) {
 		free_uint_x(*resultat);
 		*resultat = init_uint_x((1+max(a.taille,b.taille))*64);
-		}*/
+		}
 	
-	for(int i=0; i < min(a.taille, b.taille); i++){
+	for(i=0; i < min(a.taille, b.taille); i++){
 		//on ajoute la retenue dans a ou b s'ils sont < MAX_UINT64 sinon on garde la retenue
-		if(retenue > 0 && a.tab[i] < MAX_UINT64) { a.tab[i] += retenue-1; retenue = 0 }
-		else if(retenue > 0 && b.tab[i] < MAX_UINT64) { b.tab[i] += retenue-1; retenue = 0; }
+		if((retenue > 0) && (a.tab[i] < MAX_UINT64)) { a.tab[i] += retenue; retenue = 0; }
+		else if((retenue > 0) && (b.tab[i] < MAX_UINT64)) { b.tab[i] += retenue; retenue = 0; }
 		//on récupère les deux bits de poids fort
 		retenue += access_bit_n(a.tab[i], 64) + access_bit_n(b.tab[i], 64); 
 		//on met les deux bits de poids fort à zéro
@@ -329,30 +329,29 @@ void somme2 (UINT_X *resultat, UINT_X a, UINT_X b){
 		//somme de a.tab[i] et b.tab[i]
 		resultat->tab[i] = a.tab[i] + b.tab[i];
 		//rajout de la retenue si elle est égale à 1, sinon l'ajout se fait au début de la boucle suivante
-		if(retenue == 1){
-			//si le bit de poids fort est égal à zéro, on le met à 1
-			//sinon il est mis à zéro et la retenue passe à 2
+		if(retenue%2){
 			if(access_bit_n(resultat->tab[i], 64) == 0){
 				resultat->tab[i] |= 0x8000000000000000;
+				retenue--;
 				printf("ici\n");
 			}
 			else {
-				retenue = 2;
+				retenue++;
 				resultat->tab[i] <<= 1; resultat->tab[i] >>= 1;
 			}
 		}
+		else if(retenue != 0) retenue--;
 	}
-	resultat->tab[max(a.taille,b.taille)]+=retenue;
+	resultat->tab[i] += retenue;
 } 
 
 int main(){
 	UINT_X a=init_uint_x(64), b;
-	printf("b.init = %d\n",b.init);
+	//printf("b.init = %d\n",b.init);
 	b=init_uint_x(512);
 	
-	a.tab[0]=2;
-	printf_binaire_uint_x(a);
-	/*b.tab[0]=0xFFFFFFFFFFFFFFFC;
+	a.tab[0]=4;
+	b.tab[0]=0xFFFFFFFFFFFFFFFC;
 	
 	//int i; for(i=0;i<8;i++){ b.tab[i] = MAX_UINT64; }
 	
@@ -371,8 +370,9 @@ int main(){
 	UINT_X c = init_uint_x((1+max(a.taille,b.taille))*64);
 	printf("c>%d\n",c.taille); 
 	somme2(&c,a,b);
-	printf("c= ");
+	printf("c=\n");
 	printf_binaire_uint_x(c);
+	
 	/*somme(&c,a,b);
 	printf_binaire_uint_x(c);
 	printf("\n");
@@ -385,7 +385,7 @@ int main(){
 	*/
 	free_uint_x(a);
 	free_uint_x(b);
-	//free_uint_x(c);
+	free_uint_x(c);
 	//free_uint_x(d);
 	
 	
