@@ -1,51 +1,53 @@
-//Fonctions de calculs sur des nombres à taille variable
-//somme............ lignes 54 à 148
+/* Fonctions de calculs sur des nombres à taille variable
+ * Somme............ ligne 300
+ *  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include "my_gmp.h" 
 #include "bits.h"
 #include "printf.h"
 
-#define max(a,b) ((a<b)?(b):(a))
-#define min(a,b) ((a<b)?(a):(b))
-#define MAX_UINT64 0xFFFFFFFFFFFFFFFF
 
 
-//initialise une variable dont la taille est donnée en argument
-UINT_X init_uint_x(int taille){
+/* Alloue et initialise une variable dont la taille (nombre de bits) est donnée en argument */
+UINT_X malloc_uint_x(int taille){
 	UINT_X new;
-	new.init = 1;
-	new.taille=taille/(8*sizeof(uint64_t));
-	new.tab=calloc(new.taille, sizeof(uint64_t));
+	new.taille = taille/(8*sizeof(uint64_t));
+	new.tab = calloc(new.taille, sizeof(uint64_t));
 	if(new.tab==NULL){
-		printf("IMPOSSIBLE DE RESERVER DE LA MEMOIRE POUR UINT_X\n");
-		exit(1);
+		fprintf(stderr, "IMPOSSIBLE DE RESERVER DE LA MEMOIRE POUR UINT_X\n");
+		exit(EXIT_FAILURE);
 	}
 	return new;
 }
 
-//libère la variable de type uint_x
+/* Initialise une variable UINT_X à 0 */
+void init_uint_x(UINT_X *n){
+	memset(n->tab, 0, n->taille);
+}
+
+/* Libère la variable de type uint_x */
 void free_uint_x(UINT_X n){
 	free(n.tab);
-	n.init = 0;
 }
 
-//fait la copie d'un UINT_X
-//alloque la mémoire qu'il faut donc pas besoin de le faire avant
-void copier(UINT_X *copie, UINT_X original)
+/* Fait la copie d'un UINT_X
+ * il faut que copie ait été initialisé et avec la bonne taille
+ * Return value : on success return 1, on failure return -1 */
+int copier(UINT_X *copie, UINT_X original)
 {
 	int i;
-	if(copie->taille<original.taille){
-		free_uint_x(*copie);
-		*copie = init_uint_x(original.taille*64);
-		}
+	if(copie->tab == NULL || copie->taille<original.taille)
+		return fprintf(stderr,"copie pas initialisée ou de taille inférieure à original\n"), -1;
 	for (i=0; i<original.taille; i++) copie->tab[i] = original.tab[i];
+	return 1;
 }
 
-//si la taille d'un nombre est plus grande que necessaire, 
-//réalloue de la mémoire pour juste le nombre de bits qu'il faut
+/* Si la taille d'un nombre est plus grande que necessaire, 
+ * réalloue de la mémoire pour juste le nombre de bits qu'il faut */
 void ajuste_taille(UINT_X *n)
 {
 	int i=n->taille-1, cmp=0;
@@ -60,14 +62,8 @@ void ajuste_taille(UINT_X *n)
 	}
 }
 
-//à voir comment on va affecter une valeure à uint_x
-UINT_X affect_var(UINT_X n)
-{
-	
-	return n;
-}
 
-//fait la somme en base 2 de deux variables de type uint64
+/* Fait la somme en base 2 de deux variables de type uint64 */
 uint64_t somme_uint64(uint64_t a,uint64_t b, char *finalRetenue){
 	int i, temp=0;
 	char retenue=0;
@@ -107,14 +103,14 @@ uint64_t somme_uint64(uint64_t a,uint64_t b, char *finalRetenue){
 //attention, les calculs se font en base 2 donc la représentation en base 10 du nombre de type uint64 n'est pas correcte
 //à voir pour créer une fonction permettant d'afficher ce nombre en base 10
 //Fait la somme de deux nombres de type uint_x
-void somme(UINT_X *resultat, UINT_X a, UINT_X b)
+void somme1(UINT_X *resultat, UINT_X a, UINT_X b)
 {
 	int i;
 	char retenue=0;
 	
 	if(resultat->taille <= max(a.taille,b.taille)) {
 		free_uint_x(*resultat);
-		*resultat = init_uint_x((1+max(a.taille,b.taille))*64);
+		*resultat = malloc_uint_x((1+max(a.taille,b.taille))*64);
 		}
 	
 	for (i=0; i<max(a.taille, b.taille); i++)
@@ -144,8 +140,8 @@ void somme(UINT_X *resultat, UINT_X a, UINT_X b)
 void shift(UINT_X *copie, UINT_X original, int case_tab, int bit)
 {
 	if(copie->tab != NULL) free_uint_x(*copie);
-	*copie = init_uint_x((original.taille+case_tab+1)*64);
-	UINT_X temp = init_uint_x(original.taille*64);
+	*copie = malloc_uint_x((original.taille+case_tab+1)*64);
+	UINT_X temp = malloc_uint_x(original.taille*64);
 	int i,j;
 	copier(&temp, original);
 	
@@ -193,13 +189,13 @@ void shift(UINT_X *copie, UINT_X original, int case_tab, int bit)
 void produit(UINT_X *resultat, UINT_X a, UINT_X b)
 {
 	UINT_X temp; temp.tab = NULL;
-	UINT_X copie = init_uint_x(resultat->taille*64);
+	UINT_X copie = malloc_uint_x(resultat->taille*64);
 	int i,j;
 	
-	if (resultat->init == 0) *resultat = init_uint_x((a.taille + b.taille)*64);
+	if (resultat->tab == NULL) *resultat = malloc_uint_x((a.taille + b.taille)*64);
 	else if (resultat->taille < (a.taille + b.taille)){
 		free_uint_x(*resultat);
-		*resultat = init_uint_x((a.taille + b.taille)*64);
+		*resultat = malloc_uint_x((a.taille + b.taille)*64);
 		}
 	
 	for(i=0; i<b.taille; i++)
@@ -287,7 +283,7 @@ UINT_X difference(UINT_X a,UINT_X b){
 	int i,retenue;
 	retenue=0;
 	
-	resultat=init_uint_x((max(a.taille,b.taille)+1)*64);
+	resultat=malloc_uint_x((max(a.taille,b.taille)+1)*64);
 	for(i=0;i<(min(a.taille,b.taille));i++){
 		resultat.tab[i]=difference_uint64(a.tab[i],b.tab[i],&retenue);
 	}
@@ -303,94 +299,76 @@ UINT_X difference(UINT_X a,UINT_X b){
 	return resultat;
 }
 
-//////**************************Fonctions Améliorées*******************///////////
+/////////***********************FONCTIONS AMELIOREES*******************///////////
 
-
-void somme2 (UINT_X *resultat, UINT_X a, UINT_X b){
-	char retenue = 0; int i;
+/* Il faut que resultat soit initialisé resultat->taille >= max(a.taille, b.taille) + 1.
+ * Return value : on success return 1, on failure return -1
+ * 
+ * Lors du calcul de la retenue avec la valeur du bit de poid fort de resultat
+ * car si la retenue est > 4, la vraie valeur de la retenue est difficile à avoir 
+ * donc on fait retenue + 1 puis on shift pour avoir sa bonne valeur 
+ * de meme pour les retenue paires, ret de 10 vaut en fait 1 pour le bloc suivant 
+ * exemple: res = 10001 et ret = 101
+ * --> res = 00001 et ret = 101+1 = 110 et non ret = 101-10 
+ * (10 n'étant pas la même valeur à chaque fois)
+ * --> res = 11 00001 */
+int somme (UINT_X *resultat, UINT_X a, UINT_X b){
+	if(resultat->tab == NULL || resultat->taille <= max(a.taille, b.taille))
+		return fprintf(stderr, "variable resultat non initialisee ou la taille est inférieure à max(a.taille, b.taille) + 1\n"), -1;
 	
-	if(resultat->taille <= max(a.taille,b.taille)) {
-		free_uint_x(*resultat);
-		*resultat = init_uint_x((1+max(a.taille,b.taille))*64);
+	char retenue = 0; 
+	int i;
+	
+	/* Copie de a et b */
+	UINT_X copieA = malloc_uint_x(max(a.taille, b.taille)*64);
+	UINT_X copieB = malloc_uint_x(max(a.taille, b.taille)*64);
+	if(copier(&copieA, a) == -1) return -1;
+	if(copier(&copieB, b) == -1) return -1;
+	
+	
+	
+	for(i=0; i < copieA.taille; i++){
+		/* on ajoute la retenue dans a ou b s'ils sont < MAX_UINT64 
+		 * sinon on garde la retenue
+		 * la retenue est shifté vers la gauche car le bit de poids faible correcpond
+		 * au bit de poids fort du bloc précédent. */
+		if((retenue > 0) && (copieA.tab[i] < MAX_UINT64)) {
+			copieA.tab[i] += retenue>>1;
+			retenue = 0;
 		}
-	
-	for(i=0; i < min(a.taille, b.taille); i++){
-		//on ajoute la retenue dans a ou b s'ils sont < MAX_UINT64 sinon on garde la retenue
-		if((retenue > 0) && (a.tab[i] < MAX_UINT64)) { a.tab[i] += retenue; retenue = 0; }
-		else if((retenue > 0) && (b.tab[i] < MAX_UINT64)) { b.tab[i] += retenue; retenue = 0; }
-		//on récupère les deux bits de poids fort
-		retenue += access_bit_n(a.tab[i], 64) + access_bit_n(b.tab[i], 64); 
-		//on met les deux bits de poids fort à zéro
-		a.tab[i] <<= 1; a.tab[i] >>= 1;
-		b.tab[i] <<= 1; b.tab[i] >>= 1;
-		printf("i : %d  retenue : %d\n", i, retenue);
-		printf_binaire_uint_x(a);
-		printf_binaire_uint_x(b);
-		//somme de a.tab[i] et b.tab[i]
-		resultat->tab[i] = a.tab[i] + b.tab[i];
-		//rajout de la retenue si elle est égale à 1, sinon l'ajout se fait au début de la boucle suivante
+		else if((retenue > 0) && (copieB.tab[i] < MAX_UINT64)) {
+			copieB.tab[i] += retenue;
+			retenue = 0;
+		}
+		/* on récupère les deux bits de poids fort */
+		retenue = access_bit_n(copieA.tab[i], 64) + access_bit_n(copieB.tab[i], 64);
+		/* on met les deux bits de poids fort à zéro */
+		copieA.tab[i] <<= 1; copieA.tab[i] >>= 1;
+		copieB.tab[i] <<= 1; copieB.tab[i] >>= 1;
+		resultat->tab[i] = copieA.tab[i] + copieB.tab[i];
+		
+		/* CAS : retenue paire --> Rien
+		 * CAS : retenue impaire -->
+		 ** si le bit de poids fort de resultat.tab[i]==0, le bit est mis à 1 
+		 * et la retenue diminue de 1
+		 ** si le bit de poids fort de resultat.tab[i]==1, le bit est mis à zéro 
+		 * et la retenue augmente de 1 */
 		if(retenue%2){
 			if(access_bit_n(resultat->tab[i], 64) == 0){
 				resultat->tab[i] |= 0x8000000000000000;
 				retenue--;
-				printf("ici\n");
 			}
 			else {
 				retenue++;
 				resultat->tab[i] <<= 1; resultat->tab[i] >>= 1;
 			}
 		}
-		else if(retenue != 0) retenue--;
 	}
-	resultat->tab[i] += retenue;
-} 
-
-int main(){
-	UINT_X a=init_uint_x(64), b;
-	//printf("b.init = %d\n",b.init);
-	b=init_uint_x(512);
+	/* s'il reste une retenue, elle est ajoutée au dernier bloc */
+	printf("retenue = %d\n", retenue);
+	resultat->tab[i] += retenue>>1;
+	free_uint_x(copieA);
+	free_uint_x(copieB);	
 	
-	a.tab[0]=4;
-	b.tab[0]=0xFFFFFFFFFFFFFFFC;
-	
-	//int i; for(i=0;i<8;i++){ b.tab[i] = MAX_UINT64; }
-	
-	ajuste_taille(&a);
-	ajuste_taille(&b);
-
-	//affiche le nombre de cases de 64 bits de la variable et sa valeur en binaire
-	printf("a>%d\n",a.taille);
-	printf_binaire_uint_x(a);
-	printf("b>%d\n",b.taille);
-	printf_binaire_uint_x(b);
-	
-	
-
-	//calcule la somme et affiche la valeur
-	UINT_X c = init_uint_x((1+max(a.taille,b.taille))*64);
-	printf("c>%d\n",c.taille); 
-	somme2(&c,a,b);
-	printf("c=\n");
-	printf_binaire_uint_x(c);
-	
-	/*somme(&c,a,b);
-	printf_binaire_uint_x(c);
-	printf("\n");
-	
-	UINT_X d = init_uint_x((a.taille+b.taille)*64);
-	produit(&d,b,a);
-	printf("d>%d\n",d.taille);
-	printf_binaire_uint_x(d);
-	
-	*/
-	free_uint_x(a);
-	free_uint_x(b);
-	free_uint_x(c);
-	//free_uint_x(d);
-	
-	
-	/*UINT_X n = init_uint_x(64);
-	printf_b10_uint_x(n);
-	free_uint_x(n);*/
 	return 0;
-}
+} 

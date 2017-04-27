@@ -1,3 +1,7 @@
+/* Fonction d'affichage
+ * Affichage en base 2 et 10
+ * l'affichage en base 10 se fait avec la sturcture UINT_X_B10 */
+  
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -5,31 +9,25 @@
 #include "my_gmp.h"
 #include "printf.h"
 
-//fonction d'initialisation d'une variable de type UINT_X_B10
+/* Fonction d'initialisation d'une variable de type UINT_X_B10 */
 UINT_X_B10 init_uint_b10(int taille){
-	int i;
 	UINT_X_B10 new;
 	new.taille = taille;
-	new.tab = malloc(new.taille*sizeof(char));
+	new.tab = calloc(new.taille, sizeof(char));
 	if(new.tab == NULL){
-		printf("IMPOSSIBLE DE RESERVER DE LA MEMOIRE POUR UINT_X\n");
-		exit(1);
-	}
-	//initialise la variable à zéro
-	for(i=0;i<new.taille;i++)
-	{
-		new.tab[i]=0;
+		fprintf(stderr, "IMPOSSIBLE DE RESERVER DE LA MEMOIRE POUR UINT_X_B10\n");
+		exit(EXIT_FAILURE);
 	}
 	return new;
 }
 
-//libère la mémoire du tableau alloué d'une variable UINT_X_B10
+/* Libère la mémoire d'une variable UINT_X_B10 */
 void free_uint_x_b10(UINT_X_B10 n){
 	free(n.tab);
 	}
 
-//si la taille d'un nombre est plus grande que necessaire, 
-//réalloue de la mémoire pour juste le nombre de bits qu'il faut
+/* Si la taille d'un nombre est plus grande que necessaire, 
+ * réalloue de la mémoire pour juste le nombre de bits qu'il faut */
 void ajuste_taille_b10(UINT_X_B10 *n)
 {
 	int i=n->taille-1, cmp=0;
@@ -38,6 +36,10 @@ void ajuste_taille_b10(UINT_X_B10 *n)
 	{
 		n->taille -= cmp;
 		char *temp = malloc(n->taille*sizeof(char));
+		if(temp == NULL) {
+			fprintf(stderr, "IMPOSSIBLE DE RESERVER DE LA MEMOIRE POUR UINT_X_B10\n");
+			exit(EXIT_FAILURE);
+		}
 		for(i=0; i<n->taille; i++) temp[i] = n->tab[i];
 		free_uint_x_b10(*n);
 		n->tab=temp;
