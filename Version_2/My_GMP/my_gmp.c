@@ -26,7 +26,7 @@ UINT_X malloc_uint_x(int taille){
 
 /* Initialise une variable UINT_X à 0 */
 void init_uint_x(UINT_X *n){
-	memset(n->tab, 0, n->taille);
+	memset(n->tab, 0, n->taille*8);
 }
 
 /* Libère la variable de type uint_x */
@@ -365,7 +365,6 @@ int somme (UINT_X *resultat, UINT_X a, UINT_X b){
 		}
 	}
 	/* s'il reste une retenue, elle est ajoutée au dernier bloc */
-	printf("retenue = %d\n", retenue);
 	resultat->tab[i] += retenue>>1;
 	free_uint_x(copieA);
 	free_uint_x(copieB);	
