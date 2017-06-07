@@ -22,4 +22,5 @@ void init_uint_x(UINT_X *n);
 void free_uint_x(UINT_X n);
 int somme (UINT_X *resultat, UINT_X a, UINT_X b);
 void somme1(UINT_X *resultat, UINT_X a, UINT_X b);
+int produit(UINT_X *res, UINT_X a, UINT_X b);
 #endif

@@ -36,4 +36,5 @@ printf.o: printf.c printf.h my_gmp.h
 clean:
 	rm -f *.o
 	rm -f my_gmp
+	rm -f benchmark
 

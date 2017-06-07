@@ -4,8 +4,8 @@
 #include "my_gmp.h"
 #include "printf.h"
 
-#define TAILLE 2
-#define NB_TEST 5
+#define TAILLE 200
+#define NB_TEST 50000
 
 int main(){
 	float temps;
@@ -37,7 +37,6 @@ int main(){
 			b.tab[i] = rand();
 		}
 		somme(&c, a, b);
-		init_uint_x(&c);
 	}
 	t2 = clock();
 	
