@@ -61,9 +61,50 @@ void ajuste_taille(UINT_X *n)
 		n->tab=temp;
 	}
 }
+	
+//renvoie 1 si a<b
+int inferieur(UINT_X a,UINT_X b){
+	int i;
+	if(a.taille<b.taille) return 1;
+	else if(a.taille==b.taille){
+		for(i=a.taille-1;i>=0;i--){
+			if(a.tab[i]<b.tab[i]) return 1;
+			if(a.tab[i]>=b.tab[i]) return 0;
+		}	
+	}
+	else if(a.taille>b.taille){
+		for(i=a.taille-1;i>=b.taille-1;i--){
+			if(a.tab[i]!=0) return 0;
+		}
+		for(i=b.taille-1;i>=0;i--){
+			if(a.tab[i]<b.tab[i]) return 1;
+			if(a.tab[i]>=b.tab[i]) return 0;
+		}
+		
+	}
+	return 2;
+}
 
+//renvoie 1 si a=b
+int egal(UINT_X a, UINT_X b){
+	int i;
+	int n = min(a.taille, b.taille);
+	for(i=0; i<n; i++)
+		if(a.tab[i] != b.tab[i]) return -1;
+	if(n == a.taille)
+		{
+		for(i = n; i<b.taille; i++)
+			if(b.tab[i] != 0) return -1;
+		}
+	else
+		{
+		for(i = n; i<a.taille; i++)
+			if(a.tab[i] != 0) return -1;
+		}
+	return 1;
+}
 
-/* Fait la somme en base 2 de deux variables de type uint64 */
+//Fait la somme en base 2 de deux variables de type uint64 
 uint64_t somme_uint64(uint64_t a,uint64_t b, char *finalRetenue){
 	int i, temp=0;
 	char retenue=0;
@@ -377,5 +418,58 @@ int produit(UINT_X *res, UINT_X a, UINT_X b){
 	free_uint_x(copieB);	
 	free_uint_x(tmp);
 	free_uint_x(tmp2);
+	return 0;
+}
+
+/* ** Division **
+ * 
+ * */
+int division(UINT_X *q, UINT_X *reste, UINT_X a, UINT_X b)
+{
+	/* Test division par zero */
+	int t=0;
+	for(int i=0; i<b.taille; i++) 
+		if(b.tab[i] != 0) t++;
+	if(t==0) return fprintf(stderr, "Division par zero impossible\n"), -1;
+	/* Autres testes */
+	if(q->tab == NULL || q->taille < (a.taille + b.taille+1))
+		return fprintf(stderr, "variable quotient non initialisee ou la taille est inférieure à a.taille + b.taille +1\n"), -1;
+	if(reste->tab == NULL || reste->taille < b.taille)
+		return fprintf(stderr, "variable reste non initialisee ou la taille est inférieure à b.taille \n"), -1;
+	/* Test si a < b */
+	if(inferieur(a,b)){
+		init_uint_x(q);
+		for(int i=0; i<a.taille; i++)
+			reste->tab[i] = a.tab[i];
+		return 0;
+	}
+	/* Test si a = b */
+	if(egal(a,b)){
+		init_uint_x(reste);
+		init_uint_x(q);
+		q->tab[0] = 1;
+		return 0;
+	}
+	
+	/* Initialisation */
+	UINT_X n = malloc_uint_x(b.taille*64);
+	UINT_X p = malloc_uint_x(b.taille*2*64);
+	for(int i=0; i<b.taille;i++) 
+		p.tab[i] = b.tab[i];
+	UINT_X aux = malloc(p.taille*64);
+	UINT_X plus = malloc_uint_x(64);
+	plus.tab[0] = 1;
+	
+	
+	while(inferieur(p,a) || egal(p,a))
+	{
+		shift(&p,p,0,1);
+		somme(&n,n,plus);
+	}
+	
+	
+	free_uint_x(p);
+	free_uint_x(aux);
+	
 	return 0;
 }
